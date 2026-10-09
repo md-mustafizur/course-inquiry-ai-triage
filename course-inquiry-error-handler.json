@@ -1,0 +1,74 @@
+{
+  "name": "Course Inquiry - Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -48
+      ],
+      "id": "36817e99-a809-4081-951b-9a1b0bdaf767",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "C0C3U8HKDMG",
+          "mode": "list",
+          "cachedResultName": "workflow-errors"
+        },
+        "text": "=🚨 Workflow Error!  Workflow: {{ $json.workflow.name }} Failed Node: {{ $json.execution.lastNodeExecuted }} Error: {{ $json.execution.error.message }} Time: {{ $now }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -64,
+        -48
+      ],
+      "id": "2fd83802-3b39-4ce6-9528-bc843f13c41e",
+      "name": "Send a message",
+      "webhookId": "61acaeac-14db-44d0-b1d0-552ffcfe9a44",
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "ztd5JmG3Ib5RHuiy",
+          "name": "Slack account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "82b4a875-8c6f-4310-a719-808ba9a6ca34",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "28f7a36a12b72833441c2d17fd20075b7bcb489fe471d8fed2429335d03084f9"
+  },
+  "nodeGroups": [],
+  "id": "AmCv5Wp16FvB5ggD",
+  "tags": []
+}

@@ -1,0 +1,1418 @@
+{
+  "name": "Course Inquiry Auto-Triage Bot (GitHub Template)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "assignment",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -704,
+        -224
+      ],
+      "id": "02a08df6-cd1e-4239-b2aa-59f2173a3237",
+      "name": "Webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "99cc8dae-5694-4d8e-a4f8-c1c25f3fe936",
+              "leftValue": "={{ $json.body.phone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c8a95c86-6365-4508-ae22-32f3fb9f1425",
+              "leftValue": "={{ $json.body.message }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -480,
+        -224
+      ],
+      "id": "e09b1e65-473a-4563-96f0-e3b1f82e23db",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "782ab86b-1087-4eac-bb37-38f29add22a9",
+              "name": "Name",
+              "value": "={{ $json.body.name }}",
+              "type": "string"
+            },
+            {
+              "id": "4f8527ee-5529-4b01-af7c-ace007c220ff",
+              "name": "Phone",
+              "value": "={{ $json.body.phone }}",
+              "type": "string"
+            },
+            {
+              "id": "cd628270-95dc-4cff-9e5f-5ffcb8928b49",
+              "name": "Email",
+              "value": "={{ $json.body.email }}",
+              "type": "string"
+            },
+            {
+              "id": "8c161864-d6a7-4e5e-b679-319f8cda57bc",
+              "name": "Course Interest",
+              "value": "={{ $json.body.course_interest }}",
+              "type": "string"
+            },
+            {
+              "id": "fb87f594-a642-486d-81ac-b67d12db9065",
+              "name": "Message",
+              "value": "={{ $json.body.message }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -256,
+        -128
+      ],
+      "id": "982ce50a-4e09-44a0-bcf6-b42532c99cbb",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3904468f-ce65-4d66-a0a2-67d247ee7b6f",
+              "name": "hot_threshold",
+              "value": 7,
+              "type": "number"
+            },
+            {
+              "id": "69432005-8dbd-48a0-9305-8d251d95b2c3",
+              "name": "review_threshold",
+              "value": 4,
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -256,
+        -320
+      ],
+      "id": "57b5608d-9a35-42df-9dfa-21a74486de21",
+      "name": "Config"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "843e522d-c546-4f4b-92d2-630bc24925da",
+              "name": "masked_phone",
+              "value": "={{ $json.body.phone.slice(0, -4).replace(/\\d/g, '*') + $json.body.phone.slice(-4) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        -32,
+        -320
+      ],
+      "id": "db39f391-8b7f-4e0d-89e8-afd6207d81da",
+      "name": "Mask PII"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Name: {{ $json.body.name }}\nCourse Interest: {{ $json.body.course_interest }}\nMessage: {{ $json.body.message }}\nMasked Phone: {{ $json.masked_phone }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "CRITICAL: Do not wrap the JSON in markdown code fences (no ```json, no ```). Output raw JSON text only, starting with { and ending with }.  You are a course-inquiry triage assistant for an EdTech company. Read the inquiry and respond with STRICT JSON only — no extra text, no markdown, no code fences.  Return exactly this JSON structure: {   \"intent\": \"price\" | \"schedule\" | \"job_placement\" | \"complaint\" | \"spam\" | \"other\",   \"lead_score\": <integer 1-10>,   \"language\": \"bn\" | \"en\" | \"mixed\",   \"summary\": \"<one line summary>\",   \"suggested_reply\": \"<Bangla reply, max 80 words>\",   \"needs_human\": true | false }  Rules: - lead_score reflects how likely this person is to enroll (10 = very hot lead, 1 = not interested/spam). - suggested_reply must always be in Bangla, polite, and under 80 words. - If the message is a complaint or the person seems upset, set needs_human to true. - If the message is promotional/advertisement/irrelevant, set intent to \"spam\". - Output ONLY the JSON object. Nothing before or after it.",
+          "maxTokens": 500,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -320
+      ],
+      "id": "5e20dd5f-b798-4ea4-a01a-8e3a4fe7a4fc",
+      "name": "Message a model",
+      "retryOnFail": true,
+      "waitBetweenTries": 1000,
+      "executeOnce": false,
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Mask PII').first().json;\nconst raw = $input.first().json.content[0].text;\n\n// Strip markdown code fences if present\nconst cleaned = raw.replace(/```json\\s*/g, '').replace(/```\\s*/g, '').trim();\n\nlet parsed;\nlet isValid = true;\nlet errorReason = '';\n\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  isValid = false;\n  errorReason = 'JSON parse failed: ' + e.message;\n  parsed = {};\n}\n\nif (isValid) {\n  const allowedIntents = ['price', 'schedule', 'job_placement', 'complaint', 'spam', 'other'];\n  const allowedLanguages = ['bn', 'en', 'mixed'];\n\n  if (!allowedIntents.includes(parsed.intent)) {\n    isValid = false; errorReason = 'invalid intent';\n  } else if (typeof parsed.lead_score !== 'number' || parsed.lead_score < 1 || parsed.lead_score > 10) {\n    isValid = false; errorReason = 'invalid lead_score';\n  } else if (!allowedLanguages.includes(parsed.language)) {\n    isValid = false; errorReason = 'invalid language';\n  } else if (typeof parsed.summary !== 'string' || !parsed.summary) {\n    isValid = false; errorReason = 'missing summary';\n  } else if (typeof parsed.suggested_reply !== 'string' || !parsed.suggested_reply) {\n    isValid = false; errorReason = 'missing suggested_reply';\n  } else if (typeof parsed.needs_human !== 'boolean') {\n    isValid = false; errorReason = 'invalid needs_human';\n  }\n}\n\nreturn [{\n  json: {\n    ...original,\n    is_valid: isValid,\n    error_reason: errorReason,\n    intent: parsed.intent,\n    lead_score: parsed.lead_score,\n    language: parsed.language,\n    summary: parsed.summary,\n    suggested_reply: parsed.suggested_reply,\n    needs_human: parsed.needs_human\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        -320
+      ],
+      "id": "1cf6baab-71f2-4e0f-92b5-bc1a70d9a667",
+      "name": "Parse & Validate"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b26e017e-c3f5-4607-be85-cd257def22ef",
+              "leftValue": "={{ $json.is_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        768,
+        -320
+      ],
+      "id": "84206405-b625-4ddd-b21a-52195891c50a",
+      "name": "Check Valid"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "claude-haiku-4-5-20251001",
+          "mode": "list",
+          "cachedResultName": "claude-haiku-4-5-20251001"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=   IMPORTANT: Your previous response was not valid JSON. Return ONLY raw JSON, no markdown, no explanation.Name: {{ $json.body.name }}\nCourse Interest: {{ $json.body.course_interest }}\nMessage: {{ $json.body.message }}\nMasked Phone: {{ $json.masked_phone }}"
+            }
+          ]
+        },
+        "options": {
+          "system": "CRITICAL: Do not wrap the JSON in markdown code fences (no ```json, no ```). Output raw JSON text only, starting with { and ending with }.  You are a course-inquiry triage assistant for an EdTech company. Read the inquiry and respond with STRICT JSON only — no extra text, no markdown, no code fences.  Return exactly this JSON structure: {   \"intent\": \"price\" | \"schedule\" | \"job_placement\" | \"complaint\" | \"spam\" | \"other\",   \"lead_score\": <integer 1-10>,   \"language\": \"bn\" | \"en\" | \"mixed\",   \"summary\": \"<one line summary>\",   \"suggested_reply\": \"<Bangla reply, max 80 words>\",   \"needs_human\": true | false }  Rules: - lead_score reflects how likely this person is to enroll (10 = very hot lead, 1 = not interested/spam). - suggested_reply must always be in Bangla, polite, and under 80 words. - If the message is a complaint or the person seems upset, set needs_human to true. - If the message is promotional/advertisement/irrelevant, set intent to \"spam\". - Output ONLY the JSON object. Nothing before or after it.",
+          "maxTokens": 500,
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.anthropic",
+      "typeVersion": 1,
+      "position": [
+        976,
+        -208
+      ],
+      "id": "bcd77e16-8d18-4ccd-8201-9b3e43780095",
+      "name": "Claude Retry",
+      "retryOnFail": true,
+      "waitBetweenTries": 1000,
+      "executeOnce": false,
+      "alwaysOutputData": false,
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "jsCode": "const original = $('Mask PII').first().json;\nconst raw = $input.first().json.content[0].text;\n\n// Strip markdown code fences if present\nconst cleaned = raw.replace(/```json\\s*/g, '').replace(/```\\s*/g, '').trim();\n\nlet parsed;\nlet isValid = true;\nlet errorReason = '';\n\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  isValid = false;\n  errorReason = 'JSON parse failed: ' + e.message;\n  parsed = {};\n}\n\nif (isValid) {\n  const allowedIntents = ['price', 'schedule', 'job_placement', 'complaint', 'spam', 'other'];\n  const allowedLanguages = ['bn', 'en', 'mixed'];\n\n  if (!allowedIntents.includes(parsed.intent)) {\n    isValid = false; errorReason = 'invalid intent';\n  } else if (typeof parsed.lead_score !== 'number' || parsed.lead_score < 1 || parsed.lead_score > 10) {\n    isValid = false; errorReason = 'invalid lead_score';\n  } else if (!allowedLanguages.includes(parsed.language)) {\n    isValid = false; errorReason = 'invalid language';\n  } else if (typeof parsed.summary !== 'string' || !parsed.summary) {\n    isValid = false; errorReason = 'missing summary';\n  } else if (typeof parsed.suggested_reply !== 'string' || !parsed.suggested_reply) {\n    isValid = false; errorReason = 'missing suggested_reply';\n  } else if (typeof parsed.needs_human !== 'boolean') {\n    isValid = false; errorReason = 'invalid needs_human';\n  }\n}\n\nreturn [{\n  json: {\n    ...original,\n    is_valid: isValid,\n    error_reason: errorReason,\n    intent: parsed.intent,\n    lead_score: parsed.lead_score,\n    language: parsed.language,\n    summary: parsed.summary,\n    suggested_reply: parsed.suggested_reply,\n    needs_human: parsed.needs_human\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1328,
+        -208
+      ],
+      "id": "b90e5102-e2e1-4909-9ce3-f8b2572f1108",
+      "name": "Parse & Validate Retry"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "91b6079c-de90-4c3d-8954-ef3df3bbba13",
+              "leftValue": "={{ $json.is_valid }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1552,
+        -208
+      ],
+      "id": "a8845ef9-1cdd-492c-b4e3-b1cb80f1e1af",
+      "name": "Check Valid Retry"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8a001175-2dcb-4457-bb22-5282b90d908b",
+              "name": "route",
+              "value": "fallback",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2656,
+        560
+      ],
+      "id": "7d3983b2-1a76-4d7d-8862-faf75ec562f6",
+      "name": "Fallback"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "40900725-3fe4-435a-81ba-abbf8b956de8",
+              "leftValue": "={{ $json.intent === \"complaint\" || $json.needs_human === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1792,
+        -336
+      ],
+      "id": "bc27748e-9fb0-4dcf-83ad-69414d6f2b12",
+      "name": "Route: Escalation"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "d3a44a12-65ac-4ed5-a0cd-b1be4d1810ec",
+              "leftValue": "={{ $json.intent }}",
+              "rightValue": "spam",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2032,
+        -160
+      ],
+      "id": "de516644-54db-4fc8-a4d4-9e6dcd00a144",
+      "name": "Route: Spam"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "dc643671-e36c-41e2-bd94-52add991d75a",
+              "leftValue": "={{ $json.lead_score }}",
+              "rightValue": "={{ $json.hot_threshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2256,
+        16
+      ],
+      "id": "5e803c84-57e9-4e54-8207-787912f2a45d",
+      "name": "Route: Hot"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4da4f364-67cb-4151-9794-ca23f1d65fa7",
+              "name": "route",
+              "value": "hot",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2656,
+        0
+      ],
+      "id": "bfb9661d-e7d6-4bdc-bd90-ae6734458293",
+      "name": "Hot Lead"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "ecd600e9-9eb9-4a65-8223-9759a9ef6f80",
+              "leftValue": "={{ $json.lead_score }}",
+              "rightValue": "={{ $json.review_threshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        2464,
+        192
+      ],
+      "id": "0f8e5389-7dff-4227-9b00-35ffbb7cf021",
+      "name": "Route: Review"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0590b9c3-73c8-4f41-bd18-cbb8c00e05e3",
+              "name": "route",
+              "value": "review",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2656,
+        176
+      ],
+      "id": "b3a8bdf2-7f9b-4fb2-98cc-359e2b9061ac",
+      "name": "Review Lead"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "48fe2eab-beaf-4f82-8d07-662e0e104b80",
+              "name": "route",
+              "value": "low_priority",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2656,
+        368
+      ],
+      "id": "2ef42408-1b68-47fc-8edc-ed66fb07ef25",
+      "name": "Low Priority"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "text": "=🔥 Hot Lead Alert!  Name: {{ $json.body.name }} Phone: {{ $json.body.phone }} Email: {{ $json.body.email }} Course Interest: {{ $json.body.course_interest }} Lead Score: {{ $json.lead_score }}/10 Summary: {{ $json.summary }} Message: {{ $json.body.message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        2976,
+        0
+      ],
+      "id": "89beeb7f-70ca-46a4-a5f9-3242b642c8d4",
+      "name": "Send a message"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now }}",
+            "Name": "={{ $json.body.name }}",
+            "Phone": "={{ $json.body.phone }}",
+            "Email": "={{ $json.body.email }}",
+            "Course Interest": "={{ $json.body.course_interest }}",
+            "Message": "={{ $json.body.message }}",
+            "Intent": "={{ $json.intent }}",
+            "Lead Scor": "={{ $json.lead_score }}",
+            "Language": "={{ $json.language }}",
+            "Summary": "={{ $json.summary }}",
+            "Suggested Reply": "={{ $json.suggested_reply }}",
+            "Needs Human": "={{ $json.needs_human }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Course Interest",
+              "displayName": "Course Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intent",
+              "displayName": "Intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Scor",
+              "displayName": "Lead Scor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Language",
+              "displayName": "Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Reply",
+              "displayName": "Suggested Reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Needs Human",
+              "displayName": "Needs Human",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2976,
+        176
+      ],
+      "id": "f721701b-13ac-4d48-9f39-39ebe2cb22ba",
+      "name": "Append row in sheet"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 2013515770,
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Timestamp": "={{ $now }}",
+            "Name": "={{ $json.body.name }}",
+            "Phone": "={{ $json.body.phone }}",
+            "Email": "={{ $json.body.email }}",
+            "Course Interest": "={{ $json.body.course_interest }}",
+            "Message": "={{ $json.body.message }}",
+            "Intent": "={{ $json.intent }}",
+            "Lead Scor": "={{ $json.lead_score }}",
+            "Language": "={{ $json.language }}",
+            "Summary": "={{ $json.summary }}",
+            "Suggested Reply": "={{ $json.suggested_reply }}",
+            "Needs Human": "={{ $json.needs_human }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Name",
+              "displayName": "Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Course Interest",
+              "displayName": "Course Interest",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Message",
+              "displayName": "Message",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Intent",
+              "displayName": "Intent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Lead Scor",
+              "displayName": "Lead Scor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Language",
+              "displayName": "Language",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Suggested Reply",
+              "displayName": "Suggested Reply",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Needs Human",
+              "displayName": "Needs Human",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2976,
+        368
+      ],
+      "id": "fb79e12c-f864-4632-9a6e-ad0a7cb35836",
+      "name": "Append row in sheet1"
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=আপনার কোর্স ইনকোয়ারি — {{ $json.body.course_interest }}",
+        "message": "={{ $json.suggested_reply }}",
+        "options": {
+          "sendTo": "={{ $json.body.email }}"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2976,
+        560
+      ],
+      "id": "51fd687c-97fc-4649-9251-aab25f8ca90b",
+      "name": "Create a draft"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "text": "=⚠️ Human Escalation Needed!  Name: {{ $json.body.name }} Phone: {{ $json.body.phone }} Email: {{ $json.body.email }} Course Interest: {{ $json.body.course_interest }} Intent: {{ $json.intent }} Needs Human: {{ $json.needs_human }} Summary: {{ $json.summary }} Message: {{ $json.body.message }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        2976,
+        -352
+      ],
+      "id": "8e194d0b-b7fe-4974-bb86-30a6777b8381",
+      "name": "Send a message1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\n\nconst inputSummary = `${item.body?.name || 'N/A'} | ${item.body?.course_interest || 'N/A'} | ${item.body?.message || 'N/A'}`;\n\nconst claudeOutput = JSON.stringify({\n  intent: item.intent,\n  lead_score: item.lead_score,\n  language: item.language,\n  summary: item.summary,\n  suggested_reply: item.suggested_reply,\n  needs_human: item.needs_human\n});\n\n// Rough token estimate: ~4 characters per token (English/mixed approx)\nconst inputChars = (item.body?.message || '').length + 300; // +300 for system prompt overhead estimate\nconst outputChars = claudeOutput.length;\nconst estimatedTokens = Math.ceil((inputChars + outputChars) / 4);\nconst estimatedCostUSD = (estimatedTokens / 1000000 * 0.8).toFixed(6); // Haiku-class approx rate, adjust per actual pricing\n\nreturn [{\n  json: {\n    timestamp: new Date().toISOString(),\n    route: item.route || 'unknown',\n    input_summary: inputSummary,\n    claude_output: claudeOutput,\n    estimated_token_cost: estimatedCostUSD\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2976,
+        -176
+      ],
+      "id": "e4af1491-1510-46cd-8b94-6a1d0571d88c",
+      "name": "Prepare Log Data"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 993168161,
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Estimated Token Cost": "={{ $json.estimated_token_cost }}",
+            "Claude Output (JSON)": "={{ $json.claude_output }}",
+            "Input Summary": "={{ $json.input_summary }}",
+            "Route": "={{ $json.route }}",
+            "Timestamp": "={{ $json.timestamp }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Timestamp",
+              "displayName": "Timestamp",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Route",
+              "displayName": "Route",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Input Summary",
+              "displayName": "Input Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Claude Output (JSON)",
+              "displayName": "Claude Output (JSON)",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Estimated Token Cost",
+              "displayName": "Estimated Token Cost",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3296,
+        -352
+      ],
+      "id": "646d47f7-6eb0-4ab4-90c5-6b531aa4336a",
+      "name": "Append row in sheet2"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f7534dab-eb25-49c6-a4c2-01d84ee2869a",
+              "name": "route",
+              "value": "spam",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2656,
+        -176
+      ],
+      "id": "79c85943-e744-44d5-a459-0d16c1bab42c",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "7bdfb0ba-7fb8-44c7-af78-65fc37e161b9",
+              "name": "route",
+              "value": "escalation",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        2656,
+        -352
+      ],
+      "id": "c38bfb7f-08da-414a-a1ef-8d498d2fcfba",
+      "name": "Escalation Lead"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Mask PII",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mask PII": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate": {
+      "main": [
+        [
+          {
+            "node": "Check Valid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Valid": {
+      "main": [
+        [
+          {
+            "node": "Route: Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Claude Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Claude Retry": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate Retry": {
+      "main": [
+        [
+          {
+            "node": "Check Valid Retry",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Valid Retry": {
+      "main": [
+        [
+          {
+            "node": "Route: Escalation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Escalation": {
+      "main": [
+        [
+          {
+            "node": "Escalation Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route: Spam",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Spam": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route: Hot",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Hot": {
+      "main": [
+        [
+          {
+            "node": "Hot Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route: Review",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route: Review": {
+      "main": [
+        [
+          {
+            "node": "Review Lead",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Low Priority",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hot Lead": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Review Lead": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Log Data": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        []
+      ]
+    },
+    "Append row in sheet1": {
+      "main": [
+        []
+      ]
+    },
+    "Fallback": {
+      "main": [
+        [
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Low Priority": {
+      "main": [
+        [
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escalation Lead": {
+      "main": [
+        [
+          {
+            "node": "Send a message1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare Log Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "AmCv5Wp16FvB5ggD",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "nodeGroups": []
+}

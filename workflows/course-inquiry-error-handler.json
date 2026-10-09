@@ -1,0 +1,60 @@
+{
+  "name": "Course Inquiry - Error Handler (GitHub Template)",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -288,
+        -48
+      ],
+      "id": "36817e99-a809-4081-951b-9a1b0bdaf767",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "oAuth2",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "REPLACE_WITH_YOUR_SLACK_CHANNEL_ID",
+          "mode": "list",
+          "cachedResultName": "Configure after import"
+        },
+        "text": "=🚨 Workflow Error!  Workflow: {{ $json.workflow.name }} Failed Node: {{ $json.execution.lastNodeExecuted }} Error: {{ $json.execution.error.message }} Time: {{ $now }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.7,
+      "position": [
+        -64,
+        -48
+      ],
+      "id": "2fd83802-3b39-4ce6-9528-bc843f13c41e",
+      "name": "Send a message"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "nodeGroups": []
+}
