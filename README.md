@@ -1,1 +1,1 @@
-# m-course-inquiry-ai-triage
+#-course-inquiry-ai-triage
